@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+*.log
+logs/
+texts/
+outputs/
+analysis/
+checkpoints/
+merged/
+models/
+.cache/
