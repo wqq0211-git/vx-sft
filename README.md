@@ -1,28 +1,42 @@
 # vx sft
 
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)
+![LoRA](https://img.shields.io/badge/Finetune-LoRA-orange.svg)
+![UI](https://img.shields.io/badge/UI-Gradio-pink.svg)
+
 一个面向私有聊天风格微调的公开模板仓库，包含 SFT / LoRA 训练、二轮训练、LoRA 合并、批量推理检查和 Gradio UI。
 
-这个仓库的定位不是直接发布私有模型，而是提供一套可复用的工程骨架，让你可以在**不公开聊天数据**的前提下，自己完成训练、验证、合并和部署。
+这个仓库的目标不是直接公开私有模型，而是提供一套可以复用的工程骨架，让你在**不公开聊天数据**的前提下，自己完成训练、验证、合并和部署。
 
-## Features
+## 目录
 
-- LoRA / SFT 训练脚本
-- 第二轮微调配置模板
-- LoRA 合并为完整模型
-- Gradio 本地聊天 UI
-- 单卡 / 双卡训练脚本
-- 训练进度查看脚本
-- 手工复线文档
-- GitHub 公开发布版脱敏结构
+- [项目特点](#项目特点)
+- [目录结构](#目录结构)
+- [隐私原则](#隐私原则)
+- [快速开始](#快速开始)
+- [推荐工作流](#推荐工作流)
+- [文档说明](#文档说明)
+- [注意事项](#注意事项)
+- [许可证](#许可证)
 
-## Repo Structure
+## 项目特点
+
+- 支持 LoRA / SFT 训练流程
+- 支持第二轮微调配置和双卡训练脚本
+- 支持 LoRA merge 成完整模型
+- 支持本地 Gradio 聊天 UI
+- 支持训练进度查看和手工复线
+- 支持整理成 GitHub 可公开发布版
+
+## 目录结构
 
 - `training/`：训练、推理、合并、进度查看脚本
 - `configs/`：训练配置模板
 - `ui/`：本地对话 UI
 - `docs/`：训练说明、部署说明、复线记录
 
-## Privacy First
+## 隐私原则
 
 本仓库**不包含**以下内容：
 
@@ -41,9 +55,9 @@
 - `logs/`
 - `models/`
 
-## Quick Start
+## 快速开始
 
-### 1. Create environment
+### 1. 创建环境
 
 ```bash
 python3 -m venv .venv
@@ -58,7 +72,7 @@ pip install -r ui/requirements.txt
 pip install datasets pyyaml tqdm accelerate peft trl
 ```
 
-### 2. Prepare base model
+### 2. 准备基座模型
 
 把你的基座模型放到：
 
@@ -66,7 +80,7 @@ pip install datasets pyyaml tqdm accelerate peft trl
 models/Qwen2.5-3B-Instruct
 ```
 
-### 3. Prepare dataset
+### 3. 准备数据集
 
 放入你自己的 JSONL 数据：
 
@@ -82,13 +96,13 @@ outputs/round2_train.jsonl
 outputs/round2_valid.jsonl
 ```
 
-### 4. Train round 1
+### 4. 第一轮训练
 
 ```bash
 python3 training/train_lora.py --config configs/lora_qwen3b.yaml
 ```
 
-### 5. Train round 2
+### 5. 第二轮训练
 
 单卡：
 
@@ -108,7 +122,7 @@ bash training/run_train_round2_ddp.sh
 bash training/check_progress.sh
 ```
 
-### 6. Merge adapter
+### 6. 合并 LoRA
 
 ```bash
 python3 training/merge_lora.py \
@@ -117,7 +131,7 @@ python3 training/merge_lora.py \
   --output-dir merged/vx-sft-merged
 ```
 
-### 7. Launch UI
+### 7. 启动 UI
 
 merged 模式：
 
@@ -131,15 +145,15 @@ adapter 模式：
 bash ui/run_ui_adapter.sh
 ```
 
-## Suggested Workflow
+## 推荐工作流
 
-1. 先用第一轮数据学习整体聊天风格
-2. 训练后做批量推理，筛 badcase
-3. 第二轮只修 badcase，不盲目扩数据
-4. 效果稳定后再 merge 成完整模型
+1. 用第一轮训练让模型先学整体风格
+2. 做批量推理，收集 badcase
+3. 用第二轮训练集中修 badcase
+4. 效果稳定后 merge 成完整模型
 5. 最后用 UI 做人工对话验证
 
-## Docs
+## 文档说明
 
 - `docs/How_It_Was_Done.md`：这次项目是怎么做的
 - `docs/Train_Steps.md`：手工复线训练步骤
@@ -148,13 +162,14 @@ bash ui/run_ui_adapter.sh
 - `docs/第二轮训练方案.md`：第二轮训练策略建议
 - `docs/训练与推理说明.md`：训练、推理、合并说明
 
-## Notes
+## 注意事项
 
 - 默认示例基于 `Qwen2.5-3B-Instruct`
-- UI 适合本地验证和内部演示
+- UI 更适合本地验证和内部演示
 - 公开仓库建议只放代码、模板和文档
 - 如果你要公开模型，请先确认训练数据没有隐私风险
+- 如果你要迁移到本地电脑，优先同步 `ui/`、`training/`、`configs/`、`docs/`
 
-## License
+## 许可证
 
 本项目使用 `MIT` 许可证，见 `LICENSE`。
