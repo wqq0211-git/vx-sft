@@ -46,7 +46,7 @@ class ChatModel:
                 do_sample=True,
                 temperature=temperature,
                 top_p=top_p,
-                repetition_penalty=1.08,
+                repetition_penalty=1.12,
                 no_repeat_ngram_size=4,
                 eos_token_id=self.tokenizer.eos_token_id,
                 pad_token_id=self.tokenizer.pad_token_id,
@@ -89,8 +89,8 @@ def main() -> None:
             clear = gr.Button('清空上下文')
             style_mode = gr.Radio(['更像微信聊天', '更稳妥'], value='更像微信聊天', label='模式')
         with gr.Row():
-            temperature = gr.Slider(0.1, 1.2, value=0.65, step=0.05, label='temperature')
-            top_p = gr.Slider(0.5, 1.0, value=0.88, step=0.01, label='top_p')
+            temperature = gr.Slider(0.1, 1.0, value=0.45, step=0.05, label='temperature')
+            top_p = gr.Slider(0.5, 1.0, value=0.85, step=0.01, label='top_p')
             max_new_tokens = gr.Slider(16, 128, value=48, step=8, label='max_new_tokens')
 
         send.click(

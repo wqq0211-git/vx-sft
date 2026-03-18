@@ -13,17 +13,19 @@ def load_config(path: str):
 
 
 def build_prompt(system_prompt: str, user_message: str, history: str) -> str:
-    style_guard = (
-        '回复要求：尽量像微信私聊里的自然回复；优先输出一句自然中文回复；'
-        '除非特别必要，不要只输出表情标签、图片标签、视频标签；'
-        '不要续写多轮对话；只回复当前这一次。'
-    )
-    history_block = f'历史对话参考：\n{history}\n' if history else ''
-    return (
-        f'<|system|>\n{system_prompt}\n{style_guard}\n'
-        f'<|user|>\n{history_block}当前对方发来的消息：{user_message}\n'
-        f'<|assistant|>\n'
-    )
+    lines = [f'<|system|>\n{system_prompt}\n']
+    if history:
+        for chunk in history.split('\n'):
+            chunk = chunk.strip()
+            if not chunk:
+                continue
+            if chunk.startswith('user:'):
+                lines.append(f"<|user|>\n{chunk[5:].strip()}\n")
+            elif chunk.startswith('assistant:'):
+                lines.append(f"<|assistant|>\n{chunk[10:].strip()}\n")
+    lines.append(f'<|user|>\n{user_message}\n')
+    lines.append('<|assistant|>\n')
+    return ''.join(lines)
 
 
 def clean_output(text: str) -> str:
@@ -63,8 +65,8 @@ def main() -> None:
             **inputs,
             max_new_tokens=args.max_new_tokens,
             do_sample=True,
-            temperature=0.65,
-            top_p=0.88,
+            temperature=0.45,
+            top_p=0.85,
             repetition_penalty=1.08,
             no_repeat_ngram_size=4,
             eos_token_id=tokenizer.eos_token_id,

@@ -3,19 +3,12 @@ import argparse
 import json
 import os
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import yaml
 from datasets import load_dataset
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    BitsAndBytesConfig,
-    DataCollatorForLanguageModeling,
-    Trainer,
-    TrainingArguments,
-)
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, Trainer, TrainingArguments
 
 
 def load_config(path: str) -> Dict:
@@ -23,16 +16,22 @@ def load_config(path: str) -> Dict:
         return yaml.safe_load(file)
 
 
-def build_prompt(messages: List[Dict[str, str]], system_prompt: str) -> str:
-    lines = [f"<|system|>\n{system_prompt}\n"]
+def build_training_sample(messages: List[Dict[str, str]], system_prompt: str) -> Tuple[str, str]:
+    if not messages or messages[-1]['role'] != 'assistant':
+        raise ValueError('messages must end with an assistant reply')
+
+    prompt_lines = [f"<|system|>\n{system_prompt}\n"]
     for message in messages[:-1]:
-        lines.append(f"<|{message['role']}|>\n{message['content']}\n")
-    lines.append(f"<|assistant|>\n{messages[-1]['content']}")
-    return ''.join(lines)
+        prompt_lines.append(f"<|{message['role']}|>\n{message['content']}\n")
+    prompt_lines.append('<|assistant|>\n')
+    prompt_text = ''.join(prompt_lines)
+    full_text = f"{prompt_text}{messages[-1]['content']}"
+    return prompt_text, full_text
 
 
 def preprocess_row(row: Dict, system_prompt: str) -> Dict:
-    return {'text': build_prompt(row['messages'], system_prompt)}
+    prompt_text, full_text = build_training_sample(row['messages'], system_prompt)
+    return {'prompt_text': prompt_text, 'text': full_text}
 
 
 def main() -> None:
@@ -59,14 +58,35 @@ def main() -> None:
         tokenizer.pad_token = tokenizer.eos_token
 
     def tokenize(batch: Dict[str, List[str]]) -> Dict:
-        return tokenizer(
+        full_tokens = tokenizer(
             batch['text'],
             truncation=True,
             max_length=int(config['max_seq_length']),
             padding='max_length',
         )
+        prompt_tokens = tokenizer(
+            batch['prompt_text'],
+            truncation=True,
+            max_length=int(config['max_seq_length']),
+            padding='max_length',
+        )
 
-    tokenized = dataset.map(tokenize, batched=True, remove_columns=['text'])
+        labels = []
+        pad_token_id = tokenizer.pad_token_id
+        for input_ids, prompt_ids in zip(full_tokens['input_ids'], prompt_tokens['input_ids']):
+            prompt_len = sum(1 for token_id in prompt_ids if token_id != pad_token_id)
+            row_labels = []
+            for index, token_id in enumerate(input_ids):
+                if token_id == pad_token_id or index < prompt_len:
+                    row_labels.append(-100)
+                else:
+                    row_labels.append(token_id)
+            labels.append(row_labels)
+
+        full_tokens['labels'] = labels
+        return full_tokens
+
+    tokenized = dataset.map(tokenize, batched=True, remove_columns=['prompt_text', 'text'])
 
     quantization_config = None
     if config.get('use_4bit', False):
@@ -127,7 +147,7 @@ def main() -> None:
         args=training_args,
         train_dataset=tokenized['train'],
         eval_dataset=tokenized['validation'],
-        data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
+        data_collator=None,
     )
     trainer.train()
     trainer.save_model(config['output_dir'])
