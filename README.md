@@ -13,6 +13,7 @@
 
 - [项目特点](#项目特点)
 - [目录结构](#目录结构)
+- [界面预览](#界面预览)
 - [隐私原则](#隐私原则)
 - [快速开始](#快速开始)
 - [推荐工作流](#推荐工作流)
@@ -35,6 +36,21 @@
 - `configs/`：训练配置模板
 - `ui/`：本地对话 UI
 - `docs/`：训练说明、部署说明、复线记录
+- `assets/`：公开展示用素材
+- `requirements-train.txt`：训练依赖清单
+
+## 界面预览
+
+你可以把后续的 UI 截图放到：
+
+- `assets/ui-demo.png`
+
+仓库当前已预留素材目录：`assets/README.md`
+
+如果你要做 GitHub 首页展示，建议补两张图：
+
+- 一张聊天 UI 截图
+- 一张训练到部署的流程图
 
 ## 隐私原则
 
@@ -66,10 +82,10 @@ pip install -U pip
 pip install -r ui/requirements.txt
 ```
 
-如果训练脚本还缺依赖，可继续安装：
+如果要训练，再安装训练依赖：
 
 ```bash
-pip install datasets pyyaml tqdm accelerate peft trl
+pip install -r requirements-train.txt
 ```
 
 ### 2. 准备基座模型
