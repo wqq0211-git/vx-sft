@@ -1,26 +1,49 @@
 # vx sft
 
-`vx sft` 是一个可公开发布的对话风格 SFT / LoRA 微调模板，包含训练、合并、推理和 Gradio UI。
+一个面向私有聊天风格微调的公开模板仓库，包含 SFT / LoRA 训练、二轮训练、LoRA 合并、批量推理检查和 Gradio UI。
 
-这个公开版只发布流程与代码，不发布任何私有聊天数据和私有权重。
+这个仓库的定位不是直接发布私有模型，而是提供一套可复用的工程骨架，让你可以在**不公开聊天数据**的前提下，自己完成训练、验证、合并和部署。
 
-## 包含内容
+## Features
 
-- `training/`：LoRA 训练、推理、合并脚本
+- LoRA / SFT 训练脚本
+- 第二轮微调配置模板
+- LoRA 合并为完整模型
+- Gradio 本地聊天 UI
+- 单卡 / 双卡训练脚本
+- 训练进度查看脚本
+- 手工复线文档
+- GitHub 公开发布版脱敏结构
+
+## Repo Structure
+
+- `training/`：训练、推理、合并、进度查看脚本
 - `configs/`：训练配置模板
-- `ui/`：本地聊天 UI
-- `docs/`：训练、部署、复线说明
+- `ui/`：本地对话 UI
+- `docs/`：训练说明、部署说明、复线记录
 
-## 不包含内容
+## Privacy First
+
+本仓库**不包含**以下内容：
 
 - 原始聊天记录
-- 清洗后的私有数据集
-- 已训练好的私有模型权重
-- 含个人信息的日志或分析文件
+- 清洗后的私有训练数据
+- 已训练完成的私有权重
+- 含个人信息的日志、样本、分析结果
 
-## 快速开始
+如果你要继续公开自己的版本，建议始终忽略：
 
-### 1. 准备基础环境
+- `texts/`
+- `outputs/`
+- `analysis/`
+- `checkpoints/`
+- `merged/`
+- `logs/`
+- `models/`
+
+## Quick Start
+
+### 1. Create environment
 
 ```bash
 python3 -m venv .venv
@@ -29,36 +52,63 @@ pip install -U pip
 pip install -r ui/requirements.txt
 ```
 
-### 2. 准备基座模型
+如果训练脚本还缺依赖，可继续安装：
 
-示例目录：
+```bash
+pip install datasets pyyaml tqdm accelerate peft trl
+```
+
+### 2. Prepare base model
+
+把你的基座模型放到：
 
 ```bash
 models/Qwen2.5-3B-Instruct
 ```
 
-### 3. 准备训练数据
+### 3. Prepare dataset
 
-示例目录：
+放入你自己的 JSONL 数据：
 
 ```bash
 outputs/train.jsonl
 outputs/valid.jsonl
 ```
 
-### 4. 开始训练
+第二轮数据可放到：
+
+```bash
+outputs/round2_train.jsonl
+outputs/round2_valid.jsonl
+```
+
+### 4. Train round 1
 
 ```bash
 python3 training/train_lora.py --config configs/lora_qwen3b.yaml
 ```
 
-第二轮训练：
+### 5. Train round 2
+
+单卡：
 
 ```bash
 python3 training/train_lora.py --config configs/lora_qwen3b_round2.yaml
 ```
 
-### 5. 合并 LoRA
+双卡：
+
+```bash
+bash training/run_train_round2_ddp.sh
+```
+
+查看进度：
+
+```bash
+bash training/check_progress.sh
+```
+
+### 6. Merge adapter
 
 ```bash
 python3 training/merge_lora.py \
@@ -67,7 +117,7 @@ python3 training/merge_lora.py \
   --output-dir merged/vx-sft-merged
 ```
 
-### 6. 启动 UI
+### 7. Launch UI
 
 merged 模式：
 
@@ -81,22 +131,30 @@ adapter 模式：
 bash ui/run_ui_adapter.sh
 ```
 
-## 文档
+## Suggested Workflow
+
+1. 先用第一轮数据学习整体聊天风格
+2. 训练后做批量推理，筛 badcase
+3. 第二轮只修 badcase，不盲目扩数据
+4. 效果稳定后再 merge 成完整模型
+5. 最后用 UI 做人工对话验证
+
+## Docs
 
 - `docs/How_It_Was_Done.md`：这次项目是怎么做的
-- `docs/Train_Steps.md`：自己手工怎么复线训练
-- `docs/Deployment.md`：怎么部署和迁移
+- `docs/Train_Steps.md`：手工复线训练步骤
+- `docs/Deployment.md`：部署与迁移说明
+- `docs/双卡训练与进度查看.md`：双卡训练与进度查看
+- `docs/第二轮训练方案.md`：第二轮训练策略建议
+- `docs/训练与推理说明.md`：训练、推理、合并说明
 
-## 隐私建议
+## Notes
 
-公开发布时建议始终忽略：
+- 默认示例基于 `Qwen2.5-3B-Instruct`
+- UI 适合本地验证和内部演示
+- 公开仓库建议只放代码、模板和文档
+- 如果你要公开模型，请先确认训练数据没有隐私风险
 
-- `texts/`
-- `outputs/`
-- `analysis/`
-- `checkpoints/`
-- `merged/`
-- `logs/`
-- `models/`
+## License
 
-这样别人可以复用你的工程，但拿不到你的私有聊天数据。
+本项目使用 `MIT` 许可证，见 `LICENSE`。
